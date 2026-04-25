@@ -55,7 +55,7 @@ jobs:
       # To enable this, go to your GitHub Repo Settings -> Environments / Variables
       # and create a Repository Variable named ENABLE_NPM_PUBLISH and set it to 'true'
       - name: Publish to NPM Registry
-        if: ${{ vars.ENABLE_NPM_PUBLISH == 'true' }}
+        if: vars.ENABLE_NPM_PUBLISH == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/'
