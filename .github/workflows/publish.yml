@@ -61,7 +61,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GIT_TOKEN }}
           NPM_CONFIG_REGISTRY: 'https://npm.pkg.github.com/'
-        run: npx nx release publish -p ${{ steps.extract.outputs.project }}
+        run: |
+          # Map the GitHub token to the GitHub registry URL
+          npm config set //npm.pkg.github.com/:_authToken $NODE_AUTH_TOKEN
+          npx nx release publish -p ${{ steps.extract.outputs.project }}
 
       # 4. Publish to NPM Registry (Optional)
       - name: Publish to NPM Registry
@@ -69,4 +72,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/'
-        run: npx nx release publish -p ${{ steps.extract.outputs.project }}
+        run: |
+          # Map the NPM token to the NPM registry URL
+          npm config set //registry.npmjs.org/:_authToken $NODE_AUTH_TOKEN
+          npx nx release publish -p ${{ steps.extract.outputs.project }}
