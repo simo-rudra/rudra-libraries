@@ -5,17 +5,22 @@ on:
     tags:
       # Matches tags like my-ui-lib@1.0.0
       - '*@*.*.*'
-  # Adds the manual trigger button in the GitHub UI
+
   workflow_dispatch:
     inputs:
       project_name:
-        description: 'Name of the library to publish (e.g., my-ui-lib)'
+        description: 'Name of the library (e.g., my-ui-lib)'
         required: true
+        type: string
+      version:
+        description: 'Version (e.g., 1.0.0)'
+        required: false
         type: string
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       packages: write
@@ -30,49 +35,72 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
         run: npm ci
 
-      # 1. Determine the project name (handles both Tag and Manual triggers)
-      - name: Determine Project Name
+      # 🔥 Extract project + version (supports both tag + manual)
+      - name: Determine Project and Version
         id: extract
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # If triggered manually, use the input provided in the UI
             PROJECT_NAME="${{ inputs.project_name }}"
-            echo "Manual trigger detected."
+            VERSION="${{ inputs.version }}"
+
+            if [ -z "$VERSION" ]; then
+              echo "❌ Version is required for manual trigger"
+              exit 1
+            fi
+
+            echo "Manual trigger detected"
           else
-            # If triggered by a tag push, extract it from the tag name
             TAG_NAME=${{ github.ref_name }}
             PROJECT_NAME="${TAG_NAME%@*}"
-            echo "Tag push detected."
+            VERSION="${TAG_NAME#*@}"
+
+            echo "Tag trigger detected"
           fi
 
-          echo "Targeting project: $PROJECT_NAME"
-          echo "project=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "Project: $PROJECT_NAME"
+          echo "Version: $VERSION"
 
-      # 2. Build ONLY the targeted library
-      - name: Build targeted library
+          echo "project=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # 🔥 Build ONLY the targeted library
+      - name: Build library
         run: npx nx build ${{ steps.extract.outputs.project }}
 
-      # 3. Publish to GitHub Packages
+      # 🔥 Ensure package.json exists in dist
+      - name: Validate package.json
+        run: |
+          if [ ! -f "dist/libs/${{ steps.extract.outputs.project }}/package.json" ]; then
+            echo "❌ package.json not found in dist. Fix your Nx build config."
+            exit 1
+          fi
+
+      # 🔥 Set correct version before publish
+      - name: Set version
+        run: |
+          cd dist/libs/${{ steps.extract.outputs.project }}
+          npm version ${{ steps.extract.outputs.version }} --no-git-tag-version
+
+      # 🔥 Publish to GitHub Packages
       - name: Publish to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GIT_TOKEN }}
-          NPM_CONFIG_REGISTRY: 'https://npm.pkg.github.com/'
         run: |
-          # Map the GitHub token to the GitHub registry URL
-          npm config set //npm.pkg.github.com/:_authToken $NODE_AUTH_TOKEN
-          npx nx release publish -p ${{ steps.extract.outputs.project }}
+          cd dist/libs/${{ steps.extract.outputs.project }}
+          npm config set registry https://npm.pkg.github.com/
+          npm publish
 
-      # 4. Publish to NPM Registry (Optional)
+      # 🔥 Publish to NPM (optional)
       - name: Publish to NPM Registry
         if: vars.ENABLE_NPM_PUBLISH == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/'
         run: |
-          # Map the NPM token to the NPM registry URL
-          npm config set //registry.npmjs.org/:_authToken $NODE_AUTH_TOKEN
-          npx nx release publish -p ${{ steps.extract.outputs.project }}
+          cd dist/libs/${{ steps.extract.outputs.project }}
+          npm config set registry https://registry.npmjs.org/
+          npm publish --access public
