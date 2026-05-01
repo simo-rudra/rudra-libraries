@@ -92,7 +92,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GIT_TOKEN }}
         run: |
           cd dist/libs/${{ steps.extract.outputs.project }}
-          npm config set registry https://npm.pkg.github.com/
+          npm config set //npm.pkg.github.com/:_authToken $NODE_AUTH_TOKEN
           npm publish
 
       # 🔥 Publish to NPM (optional)
@@ -102,5 +102,5 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd dist/libs/${{ steps.extract.outputs.project }}
-          npm config set registry https://registry.npmjs.org/
+          npm config set //registry.npmjs.org/:_authToken $NODE_AUTH_TOKEN
           npm publish --access public
