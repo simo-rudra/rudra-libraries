@@ -88,6 +88,7 @@ jobs:
 
       # 🔥 Publish to GitHub Packages
       - name: Publish to GitHub Packages
+        if: vars.ENABLE_GIT_PUBLISH == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GIT_TOKEN }}
         run: |
