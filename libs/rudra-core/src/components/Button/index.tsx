@@ -7,7 +7,6 @@ export interface ButtonProps {
   className: string;
 }
 
-
 export default function Button({ariaLabel, children, onClick, className}: ButtonProps) {
   return <button aria-label={ariaLabel} className={className} onClick={onClick}>{children}</button>;
 }
