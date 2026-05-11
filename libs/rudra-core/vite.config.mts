@@ -5,7 +5,6 @@ import dts from 'vite-plugin-dts';
 import * as path from 'path';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
-// ---> 1. ADD THIS IMPORT <---
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 export default defineConfig(() => ({
@@ -20,13 +19,16 @@ export default defineConfig(() => ({
       tsconfigPath: path.join(import.meta.dirname, 'tsconfig.lib.json'),
       pathsToAliases: false,
     }),
-    // ---> 2. INITIALIZE THE PLUGIN <---
     cssInjectedByJsPlugin(),
   ],
   build: {
     outDir: '../../dist/libs/rudra-core',
     emptyOutDir: true,
     reportCompressedSize: true,
+    
+    // ---> ADD THIS LINE <---
+    cssCodeSplit: true, 
+
     commonjsOptions: { transformMixedEsModules: true },
     lib: {
       entry: 'src/index.ts',
