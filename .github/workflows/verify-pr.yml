@@ -1,16 +1,36 @@
 name: Verify Library PR
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ] # Ensures it triggers regardless of your default branch name
+
+# IMPORTANT: These permissions are required for the GitHub token to merge the PR
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - run: npm ci
-      # This runs the build to ensure the React/SCSS syntax is perfectly valid
-      - run: npx nx run-many -t build
+
+      # 1. Run the build to ensure the React/SCSS syntax is perfectly valid
+      # (Added --passWithNoTests to prevent Jest from crashing if no tests exist)
+      - run: npx nx run-many -t build test --passWithNoTests
+
+      # 2. Automatically merge the PR if it was created by our Go backend
+      - name: Auto-merge Publishing PRs
+        # Only run this step if the branch starts with "feature/publish-"
+        if: startsWith(github.head_ref, 'feature/publish-')
+        env:
+          # Use the built-in GitHub token to authenticate the CLI
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Build passed! Merging PR #${{ github.event.pull_request.number }}..."
+          gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
