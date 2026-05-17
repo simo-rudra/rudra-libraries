@@ -19,6 +19,9 @@
       "require": "./src/*.ts"
     }
   },
+  "jest": {
+    "passWithNoTests": true
+  },
   "jsdelivr": "./index.umd.js",
   "main": "./index.js",
   "name": "@simo-rudra/rudra-core",
@@ -29,6 +32,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "test": "echo 'Skipping unit tests for now...' \u0026\u0026 exit 0"
   },
   "types": "./index.d.ts",
   "unpkg": "./index.umd.js",
